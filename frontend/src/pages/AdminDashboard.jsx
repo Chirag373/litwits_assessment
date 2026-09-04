@@ -1,36 +1,57 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import Modal from '../components/Modal';
+import { useAuth } from '../context/AuthContext';
 
 const AdminDashboard = () => {
-  const [users, setUsers] = useState([
-    { id: 1, name: 'Alice Cooper', role: 'user', email: 'alice@example.com' },
-    { id: 2, name: 'Bob Smith', role: 'user', email: 'bob@example.com' },
-    { id: 3, name: 'Charlie Admin', role: 'admin', email: 'charlie@example.com' },
-  ]);
+  const [users, setUsers] = useState([]);
+  const { user } = useAuth();
+  const token = user?.token;
 
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  // Unified modal state
+  const [modalConfig, setModalConfig] = useState({ isOpen: false, type: null });
   const [showPassword, setShowPassword] = useState(false);
   
   const [selectedUser, setSelectedUser] = useState(null);
   const [newUser, setNewUser] = useState({ name: '', email: '', role: 'user', password: '' });
 
-  // Handlers for Delete
-  const openDeleteModal = (user) => {
-    setSelectedUser(user);
-    setIsDeleteModalOpen(true);
+  const fetchUsers = async () => {
+    try {
+      const response = await axios.get('/api/users', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setUsers(response.data);
+    } catch (error) {
+      console.error('Failed to fetch users:', error);
+    }
   };
 
-  const confirmDelete = () => {
-    setUsers(users.filter(u => u.id !== selectedUser.id));
-    closeModal();
+  useEffect(() => {
+    if (token) fetchUsers();
+  }, [token]);
+
+  // Handlers for Delete
+  const openDeleteModal = (u) => {
+    setSelectedUser(u);
+    setModalConfig({ isOpen: true, type: 'delete' });
+  };
+
+  const confirmDelete = async () => {
+    try {
+      await axios.delete(`/api/users/${selectedUser._id}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setUsers(users.filter(u => u._id !== selectedUser._id));
+      closeModal();
+    } catch (error) {
+      console.error('Failed to delete user:', error);
+    }
   };
 
   // Handlers for Edit
-  const openEditModal = (user) => {
-    setSelectedUser({ ...user, password: '' }); 
-    setIsEditModalOpen(true);
+  const openEditModal = (u) => {
+    setSelectedUser({ ...u, password: '' }); 
+    setModalConfig({ isOpen: true, type: 'edit' });
   };
 
   const handleEditChange = (e) => {
@@ -38,16 +59,23 @@ const AdminDashboard = () => {
     setSelectedUser({ ...selectedUser, [name]: value });
   };
 
-  const saveEdit = (e) => {
+  const saveEdit = async (e) => {
     e.preventDefault();
-    setUsers(users.map(u => u.id === selectedUser.id ? selectedUser : u));
-    closeModal();
+    try {
+      await axios.put(`/api/users/${selectedUser._id}`, selectedUser, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      fetchUsers();
+      closeModal();
+    } catch (error) {
+      console.error('Failed to update user:', error);
+    }
   };
 
   // Handlers for Add
   const openAddModal = () => {
     setNewUser({ name: '', email: '', role: 'user', password: '' });
-    setIsAddModalOpen(true);
+    setModalConfig({ isOpen: true, type: 'add' });
   };
 
   const handleAddChange = (e) => {
@@ -55,17 +83,21 @@ const AdminDashboard = () => {
     setNewUser({ ...newUser, [name]: value });
   };
 
-  const saveAdd = (e) => {
+  const saveAdd = async (e) => {
     e.preventDefault();
-    const id = users.length > 0 ? Math.max(...users.map(u => u.id)) + 1 : 1;
-    setUsers([...users, { ...newUser, id }]);
-    closeModal();
+    try {
+      await axios.post('/api/users', newUser, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      fetchUsers();
+      closeModal();
+    } catch (error) {
+      console.error('Failed to create user:', error);
+    }
   };
 
   const closeModal = () => {
-    setIsEditModalOpen(false);
-    setIsDeleteModalOpen(false);
-    setIsAddModalOpen(false);
+    setModalConfig({ isOpen: false, type: null });
     setSelectedUser(null);
     setShowPassword(false);
   };
@@ -95,7 +127,7 @@ const AdminDashboard = () => {
             </thead>
             <tbody>
               {users.map(u => (
-                <tr key={u.id}>
+                <tr key={u._id}>
                   <td>
                     <div style={{ fontWeight: 500 }}>{u.name}</div>
                     <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{u.email}</div>
@@ -141,93 +173,101 @@ const AdminDashboard = () => {
         </div>
       </div>
 
-      {/* Add Modal */}
-      <Modal isOpen={isAddModalOpen} onClose={closeModal} title="Add New User">
-        <form onSubmit={saveAdd}>
-          <div className="modal-body">
-            <div className="form-group">
-              <label className="form-label">Name</label>
-              <input className="form-input" name="name" value={newUser.name} onChange={handleAddChange} placeholder="e.g. John Doe" required />
-            </div>
-            <div className="form-group">
-              <label className="form-label">Email</label>
-              <input type="email" className="form-input" name="email" value={newUser.email} onChange={handleAddChange} placeholder="john@example.com" required />
-            </div>
-            <div className="form-group">
-              <label className="form-label">Password</label>
-              <div className="password-wrapper">
-                <input type={showPassword ? "text" : "password"} className="form-input" name="password" value={newUser.password} onChange={handleAddChange} placeholder="••••••••" required />
-                <button type="button" className="password-toggle" onClick={() => setShowPassword(!showPassword)} tabIndex="-1">
-                  {showPassword ? "Hide" : "Show"}
-                </button>
-              </div>
-            </div>
-            <div className="form-group">
-              <label className="form-label">Role</label>
-              <select className="form-input" name="role" value={newUser.role} onChange={handleAddChange}>
-                <option value="user">User</option>
-                <option value="admin">Admin</option>
-              </select>
-            </div>
-          </div>
-          <div className="modal-footer">
-            <button type="button" className="btn btn-outline" onClick={closeModal}>Cancel</button>
-            <button type="submit" className="btn btn-primary">Add User</button>
-          </div>
-        </form>
-      </Modal>
-
-      {/* Edit Modal */}
-      {selectedUser && (
-        <Modal isOpen={isEditModalOpen} onClose={closeModal} title="Edit User">
-          <form onSubmit={saveEdit}>
-            <div className="modal-body">
-              <div className="form-group">
-                <label className="form-label">Name</label>
-                <input className="form-input" name="name" value={selectedUser.name} onChange={handleEditChange} required />
-              </div>
-              <div className="form-group">
-                <label className="form-label">Email</label>
-                <input type="email" className="form-input" name="email" value={selectedUser.email} onChange={handleEditChange} required />
-              </div>
-              <div className="form-group">
-                <label className="form-label">
-                  New Password <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 'normal' }}>(Leave blank to keep current)</span>
-                </label>
-                <div className="password-wrapper">
-                  <input type={showPassword ? "text" : "password"} className="form-input" name="password" value={selectedUser.password} onChange={handleEditChange} placeholder="••••••••" />
-                  <button type="button" className="password-toggle" onClick={() => setShowPassword(!showPassword)} tabIndex="-1">
-                    {showPassword ? "Hide" : "Show"}
-                  </button>
+      {/* Unified Dynamic Modal */}
+      {modalConfig.isOpen && (
+        <Modal 
+          isOpen={modalConfig.isOpen} 
+          onClose={closeModal} 
+          title={
+            modalConfig.type === 'add' ? 'Add New User' :
+            modalConfig.type === 'edit' ? 'Edit User' :
+            modalConfig.type === 'delete' ? 'Confirm Deletion' : ''
+          }
+        >
+          {modalConfig.type === 'add' && (
+            <form onSubmit={saveAdd}>
+              <div className="modal-body">
+                <div className="form-group">
+                  <label className="form-label">Name</label>
+                  <input className="form-input" name="name" value={newUser.name} onChange={handleAddChange} placeholder="e.g. John Doe" required />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Email</label>
+                  <input type="email" className="form-input" name="email" value={newUser.email} onChange={handleAddChange} placeholder="john@example.com" required />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Password</label>
+                  <div className="password-wrapper">
+                    <input type={showPassword ? "text" : "password"} className="form-input" name="password" value={newUser.password} onChange={handleAddChange} placeholder="••••••••" required />
+                    <button type="button" className="password-toggle" onClick={() => setShowPassword(!showPassword)} tabIndex="-1">
+                      {showPassword ? "Hide" : "Show"}
+                    </button>
+                  </div>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Role</label>
+                  <select className="form-input" name="role" value={newUser.role} onChange={handleAddChange}>
+                    <option value="user">User</option>
+                    <option value="admin">Admin</option>
+                  </select>
                 </div>
               </div>
-              <div className="form-group">
-                <label className="form-label">Role</label>
-                <select className="form-input" name="role" value={selectedUser.role} onChange={handleEditChange}>
-                  <option value="user">User</option>
-                  <option value="admin">Admin</option>
-                </select>
+              <div className="modal-footer">
+                <button type="button" className="btn btn-outline" onClick={closeModal}>Cancel</button>
+                <button type="submit" className="btn btn-primary">Add User</button>
+              </div>
+            </form>
+          )}
+
+          {modalConfig.type === 'edit' && selectedUser && (
+            <form onSubmit={saveEdit}>
+              <div className="modal-body">
+                <div className="form-group">
+                  <label className="form-label">Name</label>
+                  <input className="form-input" name="name" value={selectedUser.name} onChange={handleEditChange} required />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Email</label>
+                  <input type="email" className="form-input" name="email" value={selectedUser.email} onChange={handleEditChange} required />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">
+                    New Password <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 'normal' }}>(Leave blank to keep current)</span>
+                  </label>
+                  <div className="password-wrapper">
+                    <input type={showPassword ? "text" : "password"} className="form-input" name="password" value={selectedUser.password} onChange={handleEditChange} placeholder="••••••••" />
+                    <button type="button" className="password-toggle" onClick={() => setShowPassword(!showPassword)} tabIndex="-1">
+                      {showPassword ? "Hide" : "Show"}
+                    </button>
+                  </div>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Role</label>
+                  <select className="form-input" name="role" value={selectedUser.role} onChange={handleEditChange}>
+                    <option value="user">User</option>
+                    <option value="admin">Admin</option>
+                  </select>
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button type="button" className="btn btn-outline" onClick={closeModal}>Cancel</button>
+                <button type="submit" className="btn btn-primary">Save Changes</button>
+              </div>
+            </form>
+          )}
+
+          {modalConfig.type === 'delete' && selectedUser && (
+            <div>
+              <div className="modal-body">
+                <p>Are you sure you want to delete the user <strong>{selectedUser.name}</strong>?</p>
+                <p style={{ fontSize: '0.875rem', color: 'var(--danger)', marginTop: '0.5rem' }}>This action cannot be undone.</p>
+              </div>
+              <div className="modal-footer">
+                <button type="button" className="btn btn-outline" onClick={closeModal}>Cancel</button>
+                <button type="button" className="btn btn-danger" onClick={confirmDelete}>Delete User</button>
               </div>
             </div>
-            <div className="modal-footer">
-              <button type="button" className="btn btn-outline" onClick={closeModal}>Cancel</button>
-              <button type="submit" className="btn btn-primary">Save Changes</button>
-            </div>
-          </form>
-        </Modal>
-      )}
-
-      {/* Delete Modal */}
-      {selectedUser && (
-        <Modal isOpen={isDeleteModalOpen} onClose={closeModal} title="Confirm Deletion">
-          <div className="modal-body">
-            <p>Are you sure you want to delete the user <strong>{selectedUser.name}</strong>?</p>
-            <p style={{ fontSize: '0.875rem', color: 'var(--danger)', marginTop: '0.5rem' }}>This action cannot be undone.</p>
-          </div>
-          <div className="modal-footer">
-            <button type="button" className="btn btn-outline" onClick={closeModal}>Cancel</button>
-            <button type="button" className="btn btn-danger" onClick={confirmDelete}>Delete User</button>
-          </div>
+          )}
         </Modal>
       )}
 

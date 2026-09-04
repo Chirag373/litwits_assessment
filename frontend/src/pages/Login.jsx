@@ -3,10 +3,11 @@ import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
 const Login = () => {
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const { user, login } = useAuth();
   const navigate = useNavigate();
 
@@ -17,11 +18,16 @@ const Login = () => {
     }
   }, [user, navigate]);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    const success = login(username, password);
-    if (!success) {
-      setError('Invalid credentials. Please use admin/admin or user/user.');
+    setError('');
+    setLoading(true);
+    
+    const result = await login(email, password);
+    setLoading(false);
+    
+    if (!result.success) {
+      setError(result.message || 'Invalid credentials');
     }
   };
 
@@ -41,12 +47,14 @@ const Login = () => {
         
         <form onSubmit={handleSubmit}>
           <div className="form-group">
-            <label className="form-label">Username</label>
+            <label className="form-label">Email</label>
             <input 
+              type="email"
               className="form-input" 
-              placeholder="Enter your username" 
-              value={username} 
-              onChange={e => setUsername(e.target.value)} 
+              placeholder="Enter your email" 
+              value={email} 
+              onChange={e => setEmail(e.target.value)} 
+              required
             />
           </div>
           <div className="form-group">
@@ -58,6 +66,7 @@ const Login = () => {
                 placeholder="••••••••"
                 value={password} 
                 onChange={e => setPassword(e.target.value)} 
+                required
               />
               <button 
                 type="button" 
@@ -69,8 +78,8 @@ const Login = () => {
               </button>
             </div>
           </div>
-          <button type="submit" className="btn btn-primary" style={{ width: '100%', marginTop: '0.5rem' }}>
-            Sign In
+          <button type="submit" className="btn btn-primary" style={{ width: '100%', marginTop: '0.5rem' }} disabled={loading}>
+            {loading ? 'Signing In...' : 'Sign In'}
           </button>
         </form>
       </div>
