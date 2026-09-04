@@ -3,6 +3,7 @@ const cors = require('cors');
 
 const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
+const { notFound, errorHandler } = require('./middleware/errorMiddleware');
 
 const app = express();
 
@@ -18,5 +19,9 @@ app.use('/api/users', userRoutes);
 app.get('/api/health', (req, res) => {
   res.status(200).json({ status: 'success', message: 'API is running' });
 });
+
+// Error Handling Middleware
+app.use(notFound);
+app.use(errorHandler);
 
 module.exports = app;
