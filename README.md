@@ -28,6 +28,12 @@ The app will be put on a live website soon.
 7. GitHub
 The code is neat. The commits make sense. This file explains everything.
 
+## Application Architecture
+The app has three main parts.
+First is the front. This is what the user sees in the browser. It is built with React.
+Second is the back. This is the server that runs behind the scenes. It is built with Node. It listens for requests from the front and does the hard work.
+Third is the database. This is where all the data is saved forever. It is built with MongoDB. The back talks to the database to get or save data.
+
 ## Project Structure
 The backend folder has the server code. 
 The frontend folder has the website code.
