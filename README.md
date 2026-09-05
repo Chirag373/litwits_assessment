@@ -34,6 +34,16 @@ First is the front. This is what the user sees in the browser. It is built with 
 Second is the back. This is the server that runs behind the scenes. It is built with Node. It listens for requests from the front and does the hard work.
 Third is the database. This is where all the data is saved forever. It is built with MongoDB. The back talks to the database to get or save data.
 
+## API Endpoints
+Here are the backend links the app uses:
+- `POST /api/auth/login` : Logs a user in and gives them a secure token.
+- `GET /api/users/profile` : Gets the logged-in user's data.
+- `PUT /api/users/profile` : Updates the logged-in user's data.
+- `GET /api/users` : Gets a list of all users (Admins only).
+- `POST /api/users` : Adds a new user (Admins only).
+- `PUT /api/users/:id` : Edits a specific user (Admins only).
+- `DELETE /api/users/:id` : Deletes a user (Admins only).
+
 ## Project Structure
 The backend folder has the server code. 
 The frontend folder has the website code.
