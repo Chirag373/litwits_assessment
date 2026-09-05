@@ -3,8 +3,13 @@
 ## Objective
 This is a web app ready for real users. It shows how the front connects to the back and a database.
 
-## Technology Stack
-I used React for the front. I used Node and Express for the back. The database is MongoDB. I saved the code on GitHub.
+## Technology Stack & Requirements
+I used the MERN stack for this project. To run it, you should have the following versions installed:
+- **Node.js**: v18 or higher (v24 recommended)
+- **React**: v19.x
+- **Express**: v5.x
+- **MongoDB**: Atlas Cloud Database
+- **Mongoose**: v9.x
 
 ## Requirements
 1. Authentication and Roles
@@ -49,11 +54,27 @@ The backend folder has the server code.
 The frontend folder has the website code.
 
 ## Setup Instructions
-First download this code to your computer.
 
-Open two terminals.
+Follow these simple steps to run the app on your own computer.
 
-In the first terminal go to the backend folder. Make sure your database link is set in the env file. Then type these commands:
+### Step 1: Get the Code
+Download this code to your computer.
+
+### Step 2: Set Up the Database & Environment Variables
+You need a database to save the users.
+1. Make a free database on MongoDB Atlas.
+2. Get your connection link (URI).
+3. Open the `backend` folder and find the `.env` file (or create one).
+4. Put your connection link and a secure secret inside it like this: 
+```env
+MONGO_URI=your_link_here
+JWT_SECRET=your_super_secret_key
+```
+
+### Step 3: Run the Backend Server
+Open a terminal.
+Go into the backend folder.
+Type these commands to start the server:
 
 ```bash
 cd backend
@@ -61,7 +82,10 @@ npm install
 npm run dev
 ```
 
-In the second terminal go to the frontend folder. Then type these commands:
+### Step 4: Run the Frontend Website
+Open a second terminal.
+Go into the frontend folder.
+Type these commands to start the website:
 
 ```bash
 cd frontend
@@ -69,7 +93,8 @@ npm install
 npm run dev
 ```
 
-The app will open in your browser.
+### You are done!
+The app will automatically open in your web browser.
 
 ## Production Troubleshooting Scenario
 If the app breaks I check things one by one.
