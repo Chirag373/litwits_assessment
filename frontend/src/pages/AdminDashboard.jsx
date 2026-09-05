@@ -15,6 +15,10 @@ const AdminDashboard = () => {
   const [selectedUser, setSelectedUser] = useState(null);
   const [newUser, setNewUser] = useState({ name: '', email: '', role: 'user', password: '' });
 
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const usersPerPage = 10;
+
   const fetchUsers = async () => {
     try {
       const response = await axios.get('/api/users', {
@@ -126,7 +130,7 @@ const AdminDashboard = () => {
               </tr>
             </thead>
             <tbody>
-              {users.map(u => (
+              {users.slice((currentPage - 1) * usersPerPage, currentPage * usersPerPage).map(u => (
                 <tr key={u._id}>
                   <td>
                     <div style={{ fontWeight: 500 }}>{u.name}</div>
@@ -170,6 +174,30 @@ const AdminDashboard = () => {
               )}
             </tbody>
           </table>
+          
+          {users.length >= 10 && (
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '1rem', padding: '1rem', borderTop: '1px solid var(--border-color)' }}>
+              <button 
+                className="btn btn-outline" 
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                style={{ padding: '0.4rem 0.75rem', fontSize: '0.85rem' }}
+              >
+                Previous
+              </button>
+              <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                Page {currentPage} of {Math.ceil(users.length / usersPerPage) || 1}
+              </span>
+              <button 
+                className="btn btn-outline" 
+                onClick={() => setCurrentPage(p => Math.min(Math.ceil(users.length / usersPerPage), p + 1))}
+                disabled={currentPage === Math.ceil(users.length / usersPerPage) || Math.ceil(users.length / usersPerPage) === 0}
+                style={{ padding: '0.4rem 0.75rem', fontSize: '0.85rem' }}
+              >
+                Next
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
